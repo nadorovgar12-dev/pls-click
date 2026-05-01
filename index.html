@@ -1,59 +1,795 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>click pls</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growing File Download – stops at 1 GB</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --green: #00e676;
+            --green-glow: #00e67666;
+            --text: #e0e0e0;
+            --text-secondary: #999;
+        }
 
-<style>
-    body {
-        margin: 0;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #111;
-        font-family: Arial, sans-serif;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    button {
-        background-color: #28a745;
-        color: white;
-        font-size: 28px;
-        padding: 20px 40px;
-        border: none;
-        border-radius: 12px;
-        cursor: pointer;
-        box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
-        transition: all 0.2s ease;
-    }
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
 
-    button:hover {
-        background-color: #218838;
-        transform: scale(1.05);
-        box-shadow: 0 0 30px rgba(40, 167, 69, 0.9);
-    }
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridShift 20s linear infinite;
+        }
 
-    button:active {
-        transform: scale(0.98);
-    }
-</style>
+        @keyframes gridShift {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 60px 60px, 60px 60px; }
+        }
+
+        .particles-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--green);
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatUp 4s ease-in infinite;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(0) translateX(0) scale(0); }
+            10% { opacity: 0.8; }
+            30% { opacity: 0.4; }
+            100% { opacity: 0; transform: translateY(-400px) translateX(60px) scale(1.5); }
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .btn-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glow-ring {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            animation: ringPulse 2s ease-in-out infinite;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .glow-ring:nth-child(1) {
+            animation-delay: 0s;
+            border-color: var(--green-glow);
+        }
+        .glow-ring:nth-child(2) {
+            animation-delay: 0.5s;
+            border-color: rgba(0, 230, 118, 0.25);
+            width: 180px;
+            height: 180px;
+        }
+        .glow-ring:nth-child(3) {
+            animation-delay: 1s;
+            border-color: rgba(0, 230, 118, 0.12);
+            width: 200px;
+            height: 200px;
+        }
+
+        @keyframes ringPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.25); opacity: 0; }
+        }
+
+        .btn-download {
+            position: relative;
+            z-index: 5;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: none;
+            background: radial-gradient(circle at 40% 35%, #00ff88, #00c853 60%, #009624 100%);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow:
+                0 0 40px rgba(0, 230, 118, 0.5),
+                0 0 80px rgba(0, 230, 118, 0.25),
+                0 0 120px rgba(0, 230, 118, 0.1),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.25),
+                inset 0 4px 8px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 2px;
+            outline: none;
+        }
+
+        .btn-download:hover {
+            transform: scale(1.06);
+            box-shadow:
+                0 0 60px rgba(0, 230, 118, 0.7),
+                0 0 100px rgba(0, 230, 118, 0.4),
+                0 0 160px rgba(0, 230, 118, 0.2),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.25),
+                inset 0 4px 8px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-download:active {
+            transform: scale(0.94);
+            box-shadow:
+                0 0 20px rgba(0, 230, 118, 0.4),
+                0 0 40px rgba(0, 230, 118, 0.2),
+                inset 0 6px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.1s ease;
+        }
+
+        .btn-download.active {
+            animation: btnThrob 0.8s ease-in-out infinite;
+            background: radial-gradient(circle at 40% 35%, #00ff88, #00e676 50%, #00c853 100%);
+            box-shadow:
+                0 0 70px rgba(0, 230, 118, 0.8),
+                0 0 130px rgba(0, 230, 118, 0.5),
+                0 0 200px rgba(0, 230, 118, 0.3),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.25),
+                inset 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes btnThrob {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .btn-download.completed {
+            background: radial-gradient(circle at 40% 35%, #76ff03, #00e676 60%, #00c853 100%);
+            animation: none;
+            box-shadow:
+                0 0 50px rgba(0, 230, 118, 0.6),
+                0 0 100px rgba(0, 230, 118, 0.3),
+                0 0 140px rgba(0, 230, 118, 0.15),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.25),
+                inset 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-icon {
+            font-size: 2rem;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .btn-label {
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            pointer-events: none;
+        }
+
+        .stats-panel {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px 28px;
+            min-width: 280px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .stats-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            color: var(--green);
+            font-weight: 700;
+            font-size: 1.1rem;
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+        }
+        .stat-value.growing {
+            animation: valueGlow 0.6s ease-in-out infinite alternate;
+        }
+        @keyframes valueGlow {
+            from { text-shadow: 0 0 8px var(--green-glow); }
+            to { text-shadow: 0 0 20px var(--green), 0 0 40px var(--green-glow); }
+        }
+
+        .download-log {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 20px;
+            min-width: 280px;
+            max-height: 180px;
+            overflow-y: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+        }
+
+        .download-log.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .download-log h4 {
+            color: var(--text);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            animation: fadeInLog 0.4s ease;
+        }
+        @keyframes fadeInLog {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .log-entry .log-name {
+            color: var(--text);
+            font-weight: 500;
+        }
+        .log-entry .log-size {
+            color: var(--green);
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+            font-weight: 600;
+        }
+        .log-entry .log-badge {
+            background: var(--green);
+            color: #000;
+            font-size: 0.6rem;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-left: 8px;
+            animation: badgePop 0.3s ease;
+        }
+        @keyframes badgePop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text);
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast .toast-icon {
+            margin-right: 8px;
+        }
+
+        @media (max-width: 500px) {
+            .btn-download {
+                width: 110px;
+                height: 110px;
+            }
+            .glow-ring {
+                width: 130px;
+                height: 130px;
+            }
+            .glow-ring:nth-child(2) {
+                width: 150px;
+                height: 150px;
+            }
+            .glow-ring:nth-child(3) {
+                width: 170px;
+                height: 170px;
+            }
+            .stats-panel,
+            .download-log {
+                min-width: 240px;
+                padding: 14px 18px;
+            }
+            .btn-icon {
+                font-size: 1.5rem;
+            }
+            .btn-label {
+                font-size: 0.6rem;
+            }
+        }
+    </style>
 </head>
-
 <body>
 
-<button onclick="downloadFile()">click me!</button>
+    <div class="bg-grid"></div>
+    <div class="particles-container" id="particlesContainer"></div>
+    <div class="toast" id="toast"></div>
 
-<script>
-function downloadFile() {
-    const text = "hello niga!\nare you ok niga?\ni hope you are doing well niga!";
-    const blob = new Blob([text], { type: "text/plain" });
-    const link = document.createElement("a");
+    <div class="main-container">
+        <div class="btn-wrapper">
+            <div class="glow-ring"></div>
+            <div class="glow-ring"></div>
+            <div class="glow-ring"></div>
+            <button class="btn-download" id="btnDownload" title="Start growing download (stops at 1 GB)">
+                <span class="btn-icon">⬇</span>
+                <span class="btn-label">Download</span>
+            </button>
+        </div>
 
-    link.href = URL.createObjectURL(blob);
-    link.download = "virus.txt";
-    link.click();
-}
-</script>
+        <div class="stats-panel" id="statsPanel">
+            <div class="stat-item">
+                <span class="stat-label">📦 File Size</span>
+                <span class="stat-value" id="statSize">0 B</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">⚡ Growth Rate</span>
+                <span class="stat-value" id="statRate">~1 MB/s</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🔢 Downloads</span>
+                <span class="stat-value" id="statCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">⏱ Elapsed</span>
+                <span class="stat-value" id="statTime">00:00</span>
+            </div>
+        </div>
 
+        <div class="download-log" id="downloadLog">
+            <h4>📥 Download History</h4>
+            <div id="logEntries">
+                <span style="color:#555;font-size:0.75rem;">Waiting for downloads...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ─────────────────────────────────────
+            // DOM ELEMENTS
+            // ─────────────────────────────────────
+            const btnDownload = document.getElementById('btnDownload');
+            const statsPanel = document.getElementById('statsPanel');
+            const downloadLog = document.getElementById('downloadLog');
+            const logEntries = document.getElementById('logEntries');
+            const statSize = document.getElementById('statSize');
+            const statRate = document.getElementById('statRate');
+            const statCount = document.getElementById('statCount');
+            const statTime = document.getElementById('statTime');
+            const toast = document.getElementById('toast');
+            const particlesContainer = document.getElementById('particlesContainer');
+
+            // ─────────────────────────────────────
+            // STATE
+            // ─────────────────────────────────────
+            const MAX_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB in bytes
+
+            let isGrowing = false;
+            let isCompleted = false;
+            let growthInterval = null;
+            let downloadInterval = null;
+            let elapsedInterval = null;
+            let currentFileSize = 0;
+            let downloadCount = 0;
+            let elapsedSeconds = 0;
+            let growthRatePerSec = 1_048_576;   // 1 MB/s
+            const CHUNK_SIZE = 256 * 1024;      // 256 KB
+            const DOWNLOAD_INTERVAL_MS = 3000;
+            const TICK_INTERVAL_MS = 150;
+
+            let dataChunks = [];
+            let totalDataBytes = 0;
+
+            // ─────────────────────────────────────
+            // PARTICLES
+            // ─────────────────────────────────────
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 4 + 1.5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = (40 + Math.random() * 20) + '%';
+                particle.style.top = (55 + Math.random() * 30) + '%';
+                particle.style.animationDuration = (3 + Math.random() * 5) + 's';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                particlesContainer.appendChild(particle);
+                setTimeout(() => {
+                    if (particle.parentNode) particle.parentNode.removeChild(particle);
+                }, 8000);
+            }
+
+            function spawnParticlesBurst(count = 30) {
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => createParticle(), i * 30);
+                }
+            }
+
+            setInterval(() => {
+                if (particlesContainer.children.length < 40) {
+                    createParticle();
+                }
+            }, 600);
+
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => createParticle(), i * 80);
+            }
+
+            // ─────────────────────────────────────
+            // TOAST
+            // ─────────────────────────────────────
+            let toastTimeout;
+            function showToast(message, icon = '✅') {
+                clearTimeout(toastTimeout);
+                toast.innerHTML = `<span class="toast-icon">${icon}</span> ${message}`;
+                toast.classList.add('show');
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2500);
+            }
+
+            // ─────────────────────────────────────
+            // FORMAT HELPERS
+            // ─────────────────────────────────────
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                const size = bytes / Math.pow(1024, i);
+                if (i === 0) return bytes + ' B';
+                return size.toFixed(i >= 3 ? 3 : 2) + ' ' + units[i];
+            }
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+            }
+
+            function formatRate(bytesPerSec) {
+                if (bytesPerSec < 1024) return '~' + bytesPerSec + ' B/s';
+                if (bytesPerSec < 1_048_576) return '~' + (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+                return '~' + (bytesPerSec / 1_048_576).toFixed(1) + ' MB/s';
+            }
+
+            // ─────────────────────────────────────
+            // GROWTH ENGINE
+            // ─────────────────────────────────────
+            function addDataChunk(chunkSize) {
+                if (isCompleted) return;
+                if (totalDataBytes >= MAX_SIZE) {
+                    stopAtLimit();
+                    return;
+                }
+
+                const remaining = MAX_SIZE - totalDataBytes;
+                const actualChunkSize = Math.min(chunkSize, remaining);
+
+                const chunk = new Uint8Array(actualChunkSize);
+                const patternStr = 'GROWING_FILE_DATA_';
+                const patternBytes = new TextEncoder().encode(patternStr);
+                const patternLen = patternBytes.length;
+
+                for (let i = 0; i < actualChunkSize; i++) {
+                    if (i % 64 === 0 && i + patternLen < actualChunkSize) {
+                        chunk.set(patternBytes, i);
+                        i += patternLen - 1;
+                    } else {
+                        chunk[i] = (i % 256) ^ (Math.floor(i / 256) % 256);
+                    }
+                }
+
+                dataChunks.push(chunk);
+                totalDataBytes += actualChunkSize;
+                currentFileSize = totalDataBytes;
+                statSize.textContent = formatBytes(totalDataBytes);
+
+                if (totalDataBytes >= MAX_SIZE) {
+                    stopAtLimit();
+                }
+            }
+
+            function getFullBlob() {
+                return new Blob(dataChunks, { type: 'application/octet-stream' });
+            }
+
+            function triggerDownload() {
+                if (!isGrowing && !isCompleted) return;
+                if (totalDataBytes === 0) return;
+
+                downloadCount++;
+                const blob = getFullBlob();
+                const url = URL.createObjectURL(blob);
+                const filename = isCompleted
+                    ? 'final_1GB_file.bin'
+                    : `growing_file_v${downloadCount}.bin`;
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                addLogEntry(filename, totalDataBytes);
+                statCount.textContent = downloadCount;
+
+                if (!isCompleted) {
+                    if (downloadCount === 1) {
+                        showToast('🔥 First download started! File keeps growing...', '📥');
+                    } else if (downloadCount % 5 === 0) {
+                        showToast(`📦 ${downloadCount} downloads so far! Each one bigger!`, '🚀');
+                    }
+                }
+                spawnParticlesBurst(15);
+            }
+
+            function addLogEntry(filename, size) {
+                if (logEntries.querySelector('span[style]')) {
+                    logEntries.innerHTML = '';
+                }
+                const entry = document.createElement('div');
+                entry.classList.add('log-entry');
+                entry.innerHTML = `
+                    <span>
+                        <span class="log-name">${filename}</span>
+                        <span class="log-badge">v${downloadCount}</span>
+                    </span>
+                    <span class="log-size">${formatBytes(size)}</span>
+                `;
+                logEntries.prepend(entry);
+                while (logEntries.children.length > 20) {
+                    logEntries.removeChild(logEntries.lastChild);
+                }
+            }
+
+            // ─────────────────────────────────────
+            // STOP AT 1 GB
+            // ─────────────────────────────────────
+            function stopAtLimit() {
+                if (isCompleted) return;
+
+                if (growthInterval) clearInterval(growthInterval);
+                if (downloadInterval) clearInterval(downloadInterval);
+                if (elapsedInterval) clearInterval(elapsedInterval);
+                growthInterval = null;
+                downloadInterval = null;
+                elapsedInterval = null;
+
+                isGrowing = false;
+                isCompleted = true;
+
+                btnDownload.classList.remove('active');
+                btnDownload.classList.add('completed');
+                btnDownload.querySelector('.btn-label').textContent = 'Download 1 GB';
+                btnDownload.querySelector('.btn-icon').textContent = '✅';
+                statSize.classList.remove('growing');
+                statRate.textContent = '—';
+
+                showToast('🎯 File reached 1 GB! Click the button to download it.', '🏁');
+                spawnParticlesBurst(60);
+                console.log('✅ Growth stopped at 1 GB');
+            }
+
+            // ─────────────────────────────────────
+            // START GROWING
+            // ─────────────────────────────────────
+            function startGrowing() {
+                if (isGrowing || isCompleted) return;
+
+                dataChunks = [];
+                totalDataBytes = 0;
+                currentFileSize = 0;
+                downloadCount = 0;
+                elapsedSeconds = 0;
+                growthRatePerSec = 1_048_576;
+                isCompleted = false;
+                logEntries.innerHTML = '<span style="color:#555;font-size:0.75rem;">Preparing first download...</span>';
+
+                isGrowing = true;
+
+                btnDownload.classList.remove('completed');
+                btnDownload.classList.add('active');
+                btnDownload.querySelector('.btn-label').textContent = 'Growing...';
+                btnDownload.querySelector('.btn-icon').textContent = '⏳';
+                statsPanel.classList.add('visible');
+                downloadLog.classList.add('visible');
+                statSize.textContent = '0 B';
+                statSize.classList.add('growing');
+                statCount.textContent = '0';
+                statTime.textContent = '00:00';
+                statRate.textContent = formatRate(growthRatePerSec);
+
+                growthInterval = setInterval(() => {
+                    if (isCompleted) return;
+                    const tickBytes = Math.floor(growthRatePerSec / (1000 / TICK_INTERVAL_MS));
+                    addDataChunk(tickBytes);
+                }, TICK_INTERVAL_MS);
+
+                setTimeout(() => {
+                    if (isGrowing && !isCompleted) triggerDownload();
+                }, 1000);
+
+                downloadInterval = setInterval(() => {
+                    if (isGrowing && !isCompleted) triggerDownload();
+                }, DOWNLOAD_INTERVAL_MS);
+
+                elapsedInterval = setInterval(() => {
+                    if (isCompleted) return;
+                    elapsedSeconds++;
+                    statTime.textContent = formatTime(elapsedSeconds);
+
+                    if (elapsedSeconds > 10 && elapsedSeconds % 10 === 0 && totalDataBytes < MAX_SIZE) {
+                        growthRatePerSec = Math.min(growthRatePerSec * 1.3, 50 * 1_048_576);
+                        statRate.textContent = formatRate(growthRatePerSec);
+
+                        clearInterval(growthInterval);
+                        growthInterval = setInterval(() => {
+                            if (isCompleted) return;
+                            addDataChunk(CHUNK_SIZE);
+                        }, Math.max(30, Math.floor(1000 / (growthRatePerSec / CHUNK_SIZE))));
+
+                        showToast(`⚡ Growth rate increased to ${formatRate(growthRatePerSec)}!`, '🔥');
+                        spawnParticlesBurst(25);
+                    }
+                }, 1000);
+
+                showToast('🌱 File is growing toward 1 GB… downloads every 3s', '✅');
+                spawnParticlesBurst(40);
+            }
+
+            // ─────────────────────────────────────
+            // EVENT LISTENERS
+            // ─────────────────────────────────────
+            btnDownload.addEventListener('click', () => {
+                if (isGrowing) {
+                    if (totalDataBytes > 0) {
+                        downloadCount++;
+                        const blob = getFullBlob();
+                        const url = URL.createObjectURL(blob);
+                        const filename = `growing_file_manual_v${downloadCount}.bin`;
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        addLogEntry(filename, totalDataBytes);
+                        statCount.textContent = downloadCount;
+                        showToast(`📥 Manual download: ${formatBytes(totalDataBytes)}`, '👆');
+                        spawnParticlesBurst(10);
+                    }
+                } else if (isCompleted) {
+                    if (totalDataBytes === MAX_SIZE) {
+                        downloadCount++;
+                        const blob = getFullBlob();
+                        const url = URL.createObjectURL(blob);
+                        const filename = 'final_1GB_file.bin';
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        addLogEntry(filename, totalDataBytes);
+                        statCount.textContent = downloadCount;
+                        showToast('📦 Final 1 GB file downloaded!', '🎉');
+                        spawnParticlesBurst(30);
+                    }
+                } else {
+                    startGrowing();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && e.target === document.body) {
+                    e.preventDefault();
+                    if (!isGrowing && !isCompleted) {
+                        startGrowing();
+                    }
+                }
+            });
+
+            console.log('%c🌱 Growing File Downloader Ready %c| %cStops automatically at 1 GB',
+                'color:#00e676;font-size:1.2em;', '', 'color:#aaa;');
+            console.log('%c   Press the green button or SPACE to start.', 'color:#999;');
+            console.log('%c   File grows, downloads trigger every 3s, then stops at exactly 1 GB.', 'color:#999;');
+
+            btnDownload.addEventListener('mouseenter', () => {
+                spawnParticlesBurst(8);
+            });
+
+        })();
+    </script>
 </body>
 </html>
