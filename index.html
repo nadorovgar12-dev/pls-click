@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>click pls</title>
+
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #111;
+        font-family: Arial, sans-serif;
+    }
+
+    button {
+        background-color: #28a745;
+        color: white;
+        font-size: 28px;
+        padding: 20px 40px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+        transition: all 0.2s ease;
+    }
+
+    button:hover {
+        background-color: #218838;
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(40, 167, 69, 0.9);
+    }
+
+    button:active {
+        transform: scale(0.98);
+    }
+</style>
+</head>
+
+<body>
+
+<button onclick="downloadFile()">click me!</button>
+
+<script>
+function downloadFile() {
+    const text = "hello niga!\nare you ok niga?\ni hope you are doing well niga!";
+    const blob = new Blob([text], { type: "text/plain" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = "virus.txt";
+    link.click();
+}
+</script>
+
+</body>
+</html>
